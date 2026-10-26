@@ -1,5 +1,6 @@
 """Tests for the Spatial-Gym environment (downloads the SPaRC dataset on first use)."""
 
+import json
 import socket
 import threading
 import time
@@ -12,7 +13,7 @@ pytest.importorskip("Spatial_Gym", reason="Spatial-Gym is not installed")
 import uvicorn  # noqa: E402
 from datasets import load_dataset  # noqa: E402
 from spatial_gym_env import SpatialGymAction, SpatialGymEnv  # noqa: E402
-from spatial_gym_env.models import parse_action  # noqa: E402
+from spatial_gym_env.models import parse_action, SpatialGymState  # noqa: E402
 from spatial_gym_env.server.app import app  # noqa: E402
 from spatial_gym_env.server.spatial_gym_environment import (  # noqa: E402
     SpatialGymEnvironment,
@@ -184,6 +185,31 @@ def test_play_gold_solution_over_websocket(base_url):
         assert result.done and result.reward == 1.0 and result.observation.solved
         state = env.state()
         assert state.solved and state.step_count == len(path) - 1
+
+
+def test_http_and_websocket_serve_spatial_state(base_url, sparc_rows):
+    row = one_per_level(sparc_rows)[0]
+    with urllib.request.urlopen(f"{base_url}/schema") as response:
+        properties = json.load(response)["state"]["properties"]
+    assert set(properties) == set(SpatialGymState.model_fields)
+
+    # HTTP requests each get a fresh environment; only WebSocket keeps an episode.
+    with urllib.request.urlopen(f"{base_url}/state") as response:
+        http_state = json.load(response)
+    assert set(http_state) == set(SpatialGymState.model_fields)
+    assert (
+        http_state == SpatialGymState(episode_id=http_state["episode_id"]).model_dump()
+    )
+
+    with SpatialGymEnv(base_url=base_url).sync() as env:
+        result = env.reset(seed=7, episode_id="state-contract", puzzle_id=row["id"])
+        state = env.state().model_dump()
+        assert set(state) == set(http_state)
+        assert state["episode_id"] == "state-contract"
+        assert state["puzzle_id"] == row["id"]
+        assert state["difficulty"] == row["difficulty_level"]
+        assert state["path"] == result.observation.path
+        assert state["seed"] == 7
 
 
 def test_two_clients_get_separate_episodes(base_url):
