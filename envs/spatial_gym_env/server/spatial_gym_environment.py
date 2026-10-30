@@ -207,7 +207,7 @@ class SpatialGymEnvironment(
             ),
             version="0.1.0",
             author="Lars Benedikt Kaesberg",
-            documentation_url="https://github.com/huggingface/OpenEnv/tree/main/envs/spatial_gym_env",
+            documentation_url="https://github.com/openenv/OpenEnv/tree/main/envs/spatial_gym_env",
         )
 
     def close(self) -> None:

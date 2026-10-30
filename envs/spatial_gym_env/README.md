@@ -41,7 +41,7 @@ This environment serves Spatial-Gym through OpenEnv. It uses the paper's prompts
 Install the client:
 
 ```bash
-pip install "git+https://github.com/huggingface/OpenEnv.git#subdirectory=envs/spatial_gym_env"
+pip install "git+https://github.com/openenv/OpenEnv.git#subdirectory=envs/spatial_gym_env"
 ```
 
 Connect to a running server, then let a model play one puzzle:
